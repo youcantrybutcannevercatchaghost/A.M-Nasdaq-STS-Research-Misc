@@ -1,6 +1,6 @@
 # NQ Open & Market-Structure Research
 
-Verification-first research into **where and how the NQ session turn forms**, how price behaves around liquidity levels, and whether common ICT-style ideas survive a real out-of-sample test. Built on **9 years of 1-minute NQ + ES (2017–2025)**, a fresh **2026** gate, and **BTC/SOL order-flow** for cross-asset checks.
+Verification-first research into **where and how the NQ session turn forms**, how price behaves around liquidity levels, and whether common ICT-style ideas survive a real out-of-sample test. Built on **9 years of 1-minute NQ + ES (2017–2025)** with a fresh **2026** gate.
 
 The rule throughout: **assume every "edge" is a phantom until it survives a random-price control, a fresh untouched year, and realistic costs.** Most ideas here got *killed* — and the nulls are the point.
 
@@ -9,7 +9,6 @@ The rule throughout: **assume every "edge" is a phantom until it survives a rand
 - **The day's high or low prints in the first hour ~78% of the time** (9yr) — **86% in 2026.** The turn is an opening-hour event. → `read_figures.py`, `top_anatomy.py`
 - **Fingerprint of a real extreme:** a volume climax (~2× the day's average minute) + a rejection wick (~1.5× a normal bar) + aggressor **absorption** (buyers soaked up *into* the high). → `top_anatomy.py`, `structure_fingerprint.py`
 - **Stacked levels reject ~69%** of the time — vs a single level's ~50% (= random). Stacking is the difference. → `cluster_reject.py`
-- **Cross-asset:** crypto's weekend move leads the NQ **Monday open gap** (corr +0.42); OI *magnitude* (not direction) tracks forward volatility. → `market_explore.py`, `fix_modules.py`
 
 ## ❌ What's NOT real (killed — the honest half)
 
@@ -24,17 +23,18 @@ Causal / forward-only detection, random-price controls, **2017–25 build + 2026
 ## Files
 | file | what it does |
 |---|---|
-| `market_explore.py`, `fix_modules.py` | cross-asset EDA — activity clock, high/low timing, vol clustering, momentum-vs-reversion, correlations, crypto→NQ lead, OI/funding/crowd |
+| `read_figures.py` | when the turn happens (first hour ~78%) + does the first-hour drive predict the day (no) |
 | `top_anatomy.py` | anatomy of the daily top/bottom — timing, "is-it-in" base rate, bar shape, reversal size |
 | `structure_fingerprint.py` | real top vs ordinary swing high — what's actually different |
 | `cluster_reject.py` | why price reverses at a stacked cluster vs pushes through to target |
+| `market_explore.py` | NQ + ES exploratory pass — activity clock, high/low timing, volatility clustering, momentum-vs-reversion |
 | `backtest_stack.py`, `backtest_draw.py` | honest backtests of the ICT-style setups (both lose; documented why) |
-| `contact_sheet.py`, `render_look.py`, `render_mechanics.py`, `render_draw_trades.py` | chart renderers (candles + liquidity map, in a fixed greyscale theme) |
-| `*.md` | written findings for each study |
-| `look/` | rendered charts |
+| `contact_sheet.py`, `render_look.py`, `render_mechanics.py`, `render_draw_trades.py` | chart renderers (candles + liquidity map, fixed greyscale theme) |
+| `data/` | labelled datasets — `fvg_dataset.csv` (5,950 FVGs), `flow_touches.csv` (1,071 level touches w/ order flow) |
+| `*.md`, `look/` | written findings + rendered charts |
 
 ## Data
-Raw 1-minute feeds (NQ/ES 9yr, BTC/SOL flow, 2026) are **not included** — large and from local/licensed sources. Scripts reference local paths; they're here to show **method and results**, not to run turnkey.
+Raw 1-minute NQ/ES feeds are **not included** (large / licensed) — scripts reference placeholder `DATA/` paths. The labelled `data/*.csv` datasets are self-contained.
 
 ---
 *Research, not a signal service. The value is in what's true — and what's been ruled out.*
