@@ -1,0 +1,10 @@
+# python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+# data (large / licensed — not shared)
+*.parquet
+*.feather
+# os
+.DS_Store
+Thumbs.db

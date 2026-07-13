@@ -1,0 +1,226 @@
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//  STS — Rob's 6 sub-strategies, rebuilt as INDEPENDENT Pine strategies (no portfolio gate)
+//  Translated from the Python port (sts_port.py). Aston Monnach.
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//  HOW TO USE:
+//   • Each numbered BLOCK below is its OWN separate script. Pine only allows one strategy()
+//     per script, so paste ONE block at a time into a fresh Pine editor tab, then Add to chart.
+//   • Copy from its "//@version=5" line down to the next divider.
+//   • Run on the NQ 5-MINUTE chart (the logic is built for 5m bars, ET session).
+//  VALIDATION (independent 9yr NQ solo test — see which to trust):
+//   S1 Trend-long  PASS   |  S2 Long-ORB  PASS  |  S3 RSI-short  PASS
+//   S4 Short-ORB   FAIL ⚠ (not significant, -$21k in 2026 — included so you can SEE it, don't deploy)
+//   S5 Overnight   PASS   |  S6 Universal PASS
+//  HONESTY: TV's tester is an approximation — its broker emulator + session/VWAP anchoring
+//  differ from the Python port (which itself only approximates Rob's original). Numbers won't
+//  match +$218k etc. exactly. Use this to SEE the trades and behaviour, not for exact P&L.
+//  VIX symbols: if "CBOE:VIX"/"CBOE:VIX3M" don't resolve on your plan, swap to "TVC:VIX"/"TVC:VIX3M".
+// ═══════════════════════════════════════════════════════════════════════════════════════
+
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//  BLOCK 1 of 6  ·  STS S1 — Trend-long          [PASS]  +$271k / PF 1.36 / 33% / n876
+//  09:40 long if close>sessionVWAP & 250-bar momentum>1 ; exit VWAP-cross or 16:45
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//@version=5
+strategy("STS S1 · Trend-long", overlay=true, initial_capital=100000, pyramiding=0, process_orders_on_close=true, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=2)
+et_h = hour(time, "America/New_York")
+et_m = minute(time, "America/New_York")
+t = et_h * 100 + et_m
+newSess = t >= 1800 and t[1] < 1800
+vwap = ta.vwap(close, newSess)
+atrPct = ta.atr(14) / close * 100
+mom = close - close[250]
+f_tier(x, v3, v2) => x < v3 ? 3 : x < v2 ? 2 : 1
+flat = strategy.position_size == 0
+longSig = t == 940 and close > vwap and mom > 1.0 and flat
+if longSig
+    strategy.entry("S1", strategy.long, qty = f_tier(atrPct, 0.05, 0.5))
+if strategy.position_size > 0 and (close < vwap or t >= 1645)
+    strategy.close("S1")
+plot(vwap, "sessVWAP", color.new(color.orange, 0))
+plotchar(longSig, "entry", "▲", location.belowbar, color.lime, size = size.tiny)
+
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//  BLOCK 2 of 6  ·  STS S2 — Long-ORB            [PASS]  +$218k / PF 1.29 / 51% / n1060
+//  09:30-09:45 range; long if green ORB & close>rangeHi & close>VWAP (before 15:30); SL=rangeLo; exit 16:45
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//@version=5
+strategy("STS S2 · Long-ORB", overlay=true, initial_capital=100000, pyramiding=0, process_orders_on_close=true, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=2)
+et_h = hour(time, "America/New_York")
+et_m = minute(time, "America/New_York")
+t = et_h * 100 + et_m
+newSess = t >= 1800 and t[1] < 1800
+vwap = ta.vwap(close, newSess)
+atrPct = ta.atr(14) / close * 100
+f_tier(x, v3, v2) => x < v3 ? 3 : x < v2 ? 2 : 1
+etkey = year(time, "America/New_York") * 10000 + month(time, "America/New_York") * 100 + dayofmonth(time, "America/New_York")
+newDay = etkey != etkey[1]
+var float orbHi = na
+var float orbLo = na
+var float orbOpen = na
+var float orbClose = na
+if newDay
+    orbHi := 0.0
+    orbLo := 1e9
+    orbOpen := na
+    orbClose := na
+if t == 930
+    orbOpen := open
+if t >= 930 and t < 945
+    orbHi := math.max(orbHi, high)
+    orbLo := math.min(orbLo, low)
+if t == 945
+    orbClose := close[1]
+orbReady = t >= 945 and orbHi > 0
+flat = strategy.position_size == 0
+longSig = orbReady and t < 1530 and orbClose > orbOpen and close > orbHi and close > vwap and flat
+if longSig
+    strategy.entry("S2", strategy.long, qty = f_tier(atrPct, 0.05, 0.10))
+if strategy.position_size > 0
+    stopLv = orbLo < strategy.position_avg_price ? orbLo : strategy.position_avg_price * 0.99
+    strategy.exit("stop", from_entry = "S2", stop = stopLv)
+    if t >= 1645
+        strategy.close("S2")
+plot(vwap, "sessVWAP", color.new(color.orange, 0))
+
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//  BLOCK 3 of 6  ·  STS S3 — RSI-short           [PASS]  +$166k / PF 1.70 / 44% / n250
+//  Short 09:40-15:10 if close<VWAP & RSI(21)<25 & VIX<20 ; SL +1% ; cover on VWAP-cross or 16:45
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//@version=5
+strategy("STS S3 · RSI-short", overlay=true, initial_capital=100000, pyramiding=0, process_orders_on_close=true, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=2)
+et_h = hour(time, "America/New_York")
+et_m = minute(time, "America/New_York")
+t = et_h * 100 + et_m
+newSess = t >= 1800 and t[1] < 1800
+vwap = ta.vwap(close, newSess)
+atrPct = ta.atr(14) / close * 100
+rsi = ta.rsi(close, 21)
+vix = request.security("CBOE:VIX", "D", close[1], lookahead = barmerge.lookahead_on)
+f_tier(x, v3, v2) => x < v3 ? 3 : x < v2 ? 2 : 1
+flat = strategy.position_size == 0
+shortSig = t >= 940 and t < 1510 and close < vwap and rsi < 25 and not na(vix) and vix < 20 and flat
+if shortSig
+    strategy.entry("S3", strategy.short, qty = f_tier(atrPct, 0.05, 0.5))
+if strategy.position_size < 0
+    strategy.exit("stop", from_entry = "S3", stop = strategy.position_avg_price * 1.01)
+    if close > vwap or t >= 1645
+        strategy.close("S3")
+plot(vwap, "sessVWAP", color.new(color.orange, 0))
+
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//  BLOCK 4 of 6  ·  STS S4 — Short-ORB   ⚠ FAILED VALIDATION (not significant; -$21k in 2026)
+//  Short if red ORB & close<rangeLo & close<VWAP (before 15:30); SL +0.5%; exit 15:55.  DO NOT DEPLOY — here to see only.
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//@version=5
+strategy("STS S4 · Short-ORB [FAILED]", overlay=true, initial_capital=100000, pyramiding=0, process_orders_on_close=true, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=2)
+et_h = hour(time, "America/New_York")
+et_m = minute(time, "America/New_York")
+t = et_h * 100 + et_m
+newSess = t >= 1800 and t[1] < 1800
+vwap = ta.vwap(close, newSess)
+rsi = ta.rsi(close, 21)
+f_tier(x, v3, v2) => x < v3 ? 3 : x < v2 ? 2 : 1
+etkey = year(time, "America/New_York") * 10000 + month(time, "America/New_York") * 100 + dayofmonth(time, "America/New_York")
+newDay = etkey != etkey[1]
+var float orbHi = na
+var float orbLo = na
+var float orbOpen = na
+var float orbClose = na
+if newDay
+    orbHi := 0.0
+    orbLo := 1e9
+    orbOpen := na
+    orbClose := na
+if t == 930
+    orbOpen := open
+if t >= 930 and t < 945
+    orbHi := math.max(orbHi, high)
+    orbLo := math.min(orbLo, low)
+if t == 945
+    orbClose := close[1]
+orbReady = t >= 945 and orbHi > 0
+flat = strategy.position_size == 0
+shortSig = orbReady and t < 1530 and orbClose < orbOpen and close < orbLo and close < vwap and flat
+if shortSig
+    strategy.entry("S4", strategy.short, qty = f_tier(rsi, 10, 25))
+if strategy.position_size < 0
+    strategy.exit("stop", from_entry = "S4", stop = strategy.position_avg_price * 1.005)
+    if t >= 1555
+        strategy.close("S4")
+plot(vwap, "sessVWAP", color.new(color.orange, 0))
+
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//  BLOCK 5 of 6  ·  STS S5 — Overnight           [PASS]  +$135k / PF 1.37 / 58% / n498
+//  18:15 long if close>weeklyVWAP & 1.0<dailyATR%<1.5 & VIX/VIX3M<0.95 & VIX<252d-p75 ; 0.5/0.5% bracket ; exit 08:30
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//@version=5
+strategy("STS S5 · Overnight", overlay=true, initial_capital=100000, pyramiding=0, process_orders_on_close=true, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=2)
+et_h = hour(time, "America/New_York")
+et_m = minute(time, "America/New_York")
+t = et_h * 100 + et_m
+newWeek = weekofyear != weekofyear[1]
+wvwap = ta.vwap(close, newWeek)
+vix   = request.security("CBOE:VIX",   "D", close[1], lookahead = barmerge.lookahead_on)
+vix3m = request.security("CBOE:VIX3M", "D", close[1], lookahead = barmerge.lookahead_on)
+vixp75 = request.security("CBOE:VIX", "D", ta.percentile_linear_interpolation(close, 252, 75)[1], lookahead = barmerge.lookahead_on)
+dAtrPts = request.security(syminfo.tickerid, "D", ta.atr(14)[1], lookahead = barmerge.lookahead_on)
+dClose  = request.security(syminfo.tickerid, "D", close[1],       lookahead = barmerge.lookahead_on)
+dAtrPct = dAtrPts / dClose * 100
+flat = strategy.position_size == 0
+cond = t >= 1815 and t < 1830 and close > wvwap and dAtrPct > 1.0 and dAtrPct < 1.5 and not na(vix) and not na(vix3m) and vix / vix3m < 0.95 and not na(vixp75) and vix < vixp75 and flat
+dist = math.abs(close - wvwap) / dAtrPts
+q5 = na(dist) ? 1 : dist <= 0.25 ? 3 : dist <= 0.50 ? 2 : 1
+if cond
+    strategy.entry("S5", strategy.long, qty = q5)
+if strategy.position_size > 0
+    strategy.exit("brk", from_entry = "S5", stop = strategy.position_avg_price * 0.995, limit = strategy.position_avg_price * 1.005)
+    if t >= 830 and t < 1600
+        strategy.close("S5")
+plot(wvwap, "weeklyVWAP", color.new(color.blue, 0))
+
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//  BLOCK 6 of 6  ·  STS S6 — Universal           [PASS]  +$171k / PF 1.48 / 45% / n345
+//  09:45-12:00 : long if close>dVWAP+1σ & close>open & ER(20)>0.65 & close>dVWAP (mirror short) ; SL 2.5ATR / TP 6ATR ; exit 15:55
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//@version=5
+strategy("STS S6 · Universal", overlay=true, initial_capital=100000, pyramiding=0, process_orders_on_close=true, commission_type=strategy.commission.cash_per_contract, commission_value=2.05, slippage=2)
+et_h = hour(time, "America/New_York")
+et_m = minute(time, "America/New_York")
+t = et_h * 100 + et_m
+newSess = t >= 1800 and t[1] < 1800
+dvwap = ta.vwap(hlc3, newSess)
+atr = ta.atr(14)
+atrPct = atr / close * 100
+band = ta.stdev(close, 250)
+chg = math.abs(close - close[20])
+vsum = math.sum(math.abs(close - close[1]), 20)
+er = vsum > 0 ? chg / vsum : 0.5
+f_tier(x, v3, v2) => x < v3 ? 3 : x < v2 ? 2 : 1
+inWin = t >= 945 and t < 1200
+up = close > dvwap + band
+dn = close < dvwap - band
+flat = strategy.position_size == 0
+longSig  = inWin and up and close > open and er > 0.65 and close > dvwap and flat
+shortSig = inWin and dn and close < open and er > 0.65 and close < dvwap and flat
+var float s6sl = na
+var float s6tp = na
+if longSig
+    s6sl := close - 2.5 * atr
+    s6tp := close + 6 * atr
+    strategy.entry("S6", strategy.long, qty = f_tier(atrPct, 0.1, 0.25))
+if shortSig
+    s6sl := close + 2.5 * atr
+    s6tp := close - 6 * atr
+    strategy.entry("S6", strategy.short, qty = f_tier(atrPct, 0.1, 0.25))
+if strategy.position_size != 0
+    strategy.exit("brk", from_entry = "S6", stop = s6sl, limit = s6tp)
+    if t >= 1555
+        strategy.close("S6")
+plot(dvwap, "dailyVWAP", color.new(color.orange, 0))
