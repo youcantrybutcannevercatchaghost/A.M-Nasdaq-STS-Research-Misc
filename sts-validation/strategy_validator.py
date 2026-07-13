@@ -19,7 +19,7 @@ significance (per-trade AND day-level) | max drawdown | longest losing run | ris
 
 NOTE: the execution-realism half (next-bar-open fills, known-before-bar stops, real fees,
 vs buy-and-hold) needs the strategy's own code + data, so it stays per-strategy
-(see dualst_backtest.py for the reference reality-check).
+(cross-check any candidate against a known-good trade list).
 """
 import json, sys, numpy as np, random
 try: sys.stdout.reconfigure(encoding="utf-8")

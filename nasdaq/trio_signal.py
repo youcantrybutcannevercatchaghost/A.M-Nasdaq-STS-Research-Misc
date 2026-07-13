@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import pandas as pd, numpy as np, sys, traceback
 from datetime import time
 sys.stdout.reconfigure(encoding="utf-8")
-FUT="DATA/orb-research/data/"; CF="DATA/crypto-flow/"; OUT="DATA/market-explore/"
+FUT="DATA/orb-research/data/"; OUT="DATA/market-explore/"
 UP="#dbdbdb"; DOWN="#808080"; EDGE="#000000"; BG="#b8b8b8"; MID="#a0a0a0"
 plt.rcParams.update({"figure.facecolor":BG,"axes.facecolor":BG,"savefig.facecolor":BG,"axes.edgecolor":EDGE,
   "axes.labelcolor":EDGE,"text.color":EDGE,"xtick.color":EDGE,"ytick.color":EDGE,"axes.titlecolor":EDGE,
@@ -83,8 +83,6 @@ def run(path, name, cols, has_delta, rth=False):
         return res
     except Exception as e: say(f"[{name}] ERR {e}\n{traceback.format_exc()[:300]}")
 
-run(CF+"btcusdt_flow_enriched.parquet","BTC",["ts","o","h","l","c","v","delta"],True)
-run(CF+"solusdt_flow_enriched.parquet","SOL",["ts","o","h","l","c","v","delta"],True)
 run(FUT+"nq_of_1m.parquet","NQ-2026",["ts","o","h","l","c","v","delta"],True,rth=True)
 run(FUT+"nq_1m_9yr.parquet","NQ-9yr",["ts","o","h","l","c","v"],False,rth=True)
 
