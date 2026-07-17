@@ -81,7 +81,16 @@ All six subs pass the 9-year **in-sample** gauntlet standalone. That is necessar
 
 ### True-forward 2026 (held-out; Jan 2 → Jul 9; n=159)
 
-> ⚠️ **CORRECTED 2026-07-16.** An earlier version of this section reported **+$40.9k, PF 1.16, n=152** and per-sub figures that do not match the ledger shipped in this repo. Those numbers came from an earlier run and were never updated when `trades_2026_forward.csv` was extended through Jul 9. **Every number below is recomputed directly from that CSV** — if you disagree, run it yourself; the file is right there.
+> ⚠️ **CORRECTED 2026-07-16.** An earlier version of this section reported **+$40.9k, PF 1.16, n=152**. **The code does not produce those numbers.** They were written into this prose and never came from a run. Every figure below is the shipped ledger — and as of this commit it is **reproducible end-to-end** (see *Reproducing this* below): re-running `sts_port.py` from scratch returns **159 trades / +$21,442**, matching the ledger's **159 / +$21,412** to **$30 (0.14%, tick rounding)**, with **every sub matching on trade count**:
+>
+> | sub | re-run | ledger |
+> |---|---|---|
+> | S1 | 57 / −2,207 | 57 / −2,227 |
+> | S2 | 40 / +623 | 40 / +623 |
+> | S3 | 10 / +30,154 | 10 / +30,154 |
+> | S4 | 42 / −8,923 | 42 / −8,933 |
+> | S5 | 10 / +1,794 | 10 / +1,794 |
+> | **book** | **159 / +21,442** | **159 / +21,412** |
 
 Data the book never saw. **Net positive over the period — but read the concentration before you read the total.**
 
@@ -118,6 +127,23 @@ Per-sub, from the ledger:
 *(A prior note here explained an earlier −$25k reading as a "data-gap artifact" fixed by complete data. That framing stands as history, but it should not be read as vindication — with the complete ledger the book is +$21k, PF 1.08, and concentration-dependent as above.)*
 
 See `sts_solo_curves.png`.
+
+### Reproducing this
+
+Until 2026-07-16 you couldn't. `sts_port.py` reads `vix.parquet` and `vix3m.parquet`, and **neither was in the repo** — so the headline validation was uncheckable by any reader, which is exactly the failure mode this project exists to attack. Both are now shipped:
+
+| input | what | source |
+|---|---|---|
+| `vix.parquet` | daily VIX close (2016-07 → 2026-07) | included |
+| `vix3m.parquet` | daily VIX3M close (2009-09 → 2026-07) | included; regenerate with `python make_vix3m.py` (pulls CBOE's own history) |
+| NQ 1-minute bars | `ts,o,h,l,c,v` (UTC), 2017 → present | **not included** (licensed data — point `load5m()` at your own) |
+
+```
+python make_vix3m.py          # optional: rebuild vix3m from CBOE
+# then point load5m() at your NQ 1-minute parquet and run build() -> run()
+```
+
+**Verified 2026-07-16:** a from-scratch run over 2017-2026 gives **$853,887, PF 1.33, win 42%, 3,314 trades, maxDD $61,837**; the 2026 slice returns the ledger above. VIX3M gates **S5 only** (`vix/vix3m < 0.95` — true on ~80% of days); S1–S4 don't touch it, so the 2026 verdict stands with or without that file.
 
 **Design note — single-slot blocking (a lever worth knowing):** the book trades one position at a time (all subs share a slot via `position_size==0`). Over 9yr the book nets **+$840k (PF 1.36)**; the sum of the six subs run *independently* is **+$1.30M (PF 1.42)** — so the single-slot design leaves **~$462k / 35% on the table** to internal blocking (827 signals blocked). **S6 Universal is 88% blocked** (only 40 of 345 signals taken — it fires 09:45–12:00 when the slot is usually busy). Allowing 2 concurrent positions, or giving S6 priority in its window, could recover a chunk of that — at the cost of stacked (correlated) drawdowns and more margin. A design choice, not a bug.
 

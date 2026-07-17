@@ -5,6 +5,12 @@ __pycache__/
 # data (large / licensed — not shared)
 *.parquet
 *.feather
+# ...except the two small public volatility inputs sts_port.py REQUIRES to run.
+# Excluding these silently made the STS validation unreproducible for anyone who cloned
+# the repo — the script read them, the repo never shipped them. Regenerate vix3m with
+# sts-validation/make_vix3m.py (pulls CBOE's own history).
+!sts-validation/vix.parquet
+!sts-validation/vix3m.parquet
 # os
 .DS_Store
 Thumbs.db
