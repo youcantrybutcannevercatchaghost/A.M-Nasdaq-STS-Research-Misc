@@ -8,11 +8,20 @@ The rule throughout: **assume every "edge" is a phantom until it survives a rand
 
 - **The day's high or low prints in the first hour ~78% of the time** (9yr) — **86% in 2026.** The turn is an opening-hour event. → `read_figures.py`, `top_anatomy.py`
 - **Fingerprint of a real extreme:** a volume climax (~2× the day's average minute) + a rejection wick (~1.5× a normal bar) + aggressor **absorption** (buyers soaked up *into* the high). → `top_anatomy.py`, `structure_fingerprint.py`
-- **Stacked levels reject ~69%** of the time — vs a single level's ~50% (= random). Stacking is the difference. → `cluster_reject.py`
+## ⚠️ RETRACTION — "stacked levels reject ~69%"
+
+**This repo previously listed *"Stacked levels reject ~69% — stacking is the difference"* under "What's real". That claim is withdrawn.**
+
+- What `cluster_reject.py` actually measured: a **narrow** case — 5m cluster-rallies into a stacked target, **n = 1,072**. Within that definition the 69% reject rate stands, and the script is still here.
+- What killed the **generalisation**: re-testing "does stacking change the odds?" across **95,866 level touches (2017–2026)** gives **stacked → 50.8% continue / 49.2% reject**, vs **unstacked → 49.8% continue**. **Indistinguishable. Stacking is not the difference.**
+- The 69% was a definition/sample artifact of the narrow test, generalised into a headline it couldn't carry. Single levels are a coin flip — and so are stacked ones.
+- *(The 95,866-touch dataset lives outside this repo; the claim is retracted here regardless, because it shouldn't have been stated this broadly on this evidence.)*
+
+The rule at the top of this README says assume every edge is a phantom until it survives. This one didn't, and it was ours.
 
 ## ❌ What's NOT real (killed — the honest half)
 
-- **Single levels are a coin flip** — PDH/PDL / session H&L hold ~50%, dead level with a random-price control.
+- **Single levels are a coin flip** — PDH/PDL / session H&L hold ~50%, dead level with a random-price control. **Stacked levels too** (see the retraction above).
 - **FVG / sweep / BOS don't *detect* tops** — they fire at ~the same rate on ordinary swing highs that go nowhere. Only *volume* discriminates. → `structure_fingerprint.py`
 - **Mechanical entries lose.** "Stack front-run & dump": **−1,836 pts over 9 years.** "Pullback-to-the-draw": **16% win, −1,831 pts in 2026** — verified by *rendering and eyeballing the actual trades* (wrong direction half the time, target too far, upside-down R:R). The edge is the **discretionary read** — which draw, is the R:R worth it, is the target realistic — not a fixed rule. → `backtest_stack.py`, `backtest_draw.py`, `render_draw_trades.py`
 - **The first-hour drive does not predict the day** (continues ~54% ≈ baseline; inverts in 2026).

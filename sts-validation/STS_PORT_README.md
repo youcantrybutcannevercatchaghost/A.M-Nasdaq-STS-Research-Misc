@@ -79,30 +79,45 @@ Four independent auditors read the code cold (one per dimension), and every mate
 
 All six subs pass the 9-year **in-sample** gauntlet standalone. That is necessary, not sufficient — the real test is forward.
 
-### True-forward 2026 (held-out; COMPLETE Jan 1 → Jul 2, no gaps; n=152)
+### True-forward 2026 (held-out; Jan 2 → Jul 9; n=159)
 
-Data the book never saw. **Net positive forward:**
+> ⚠️ **CORRECTED 2026-07-16.** An earlier version of this section reported **+$40.9k, PF 1.16, n=152** and per-sub figures that do not match the ledger shipped in this repo. Those numbers came from an earlier run and were never updated when `trades_2026_forward.csv` was extended through Jul 9. **Every number below is recomputed directly from that CSV** — if you disagree, run it yourself; the file is right there.
 
-| Month | net | note |
-|---|---|---|
-| Jan | −$8.1k | S1 whipsawed |
-| **Feb** | **+$49.5k** | Feb–Mar correction (NQ −6.9% peak-trough) — shorts + trend fire |
-| **Mar** | **+$17.6k** | correction continued (NQ −9.8% peak-trough) |
-| Apr | +$2.9k | |
-| May | −$13.5k | choppy up-drift, S4 chopped |
-| Jun | −$2.9k | S3 +23k (Jun 5 crash), S1 −12k |
-| Jul (1 trd) | −$4.5k | |
-| **ALL 2026** | **+$40.9k** | PF **1.16**, win 41% |
-| **ex-S4** | **+$49.9k** | PF 1.24 |
+Data the book never saw. **Net positive over the period — but read the concentration before you read the total.**
 
-**Honest verdict: in-sample strong; complete 2026 forward is net +$41k (PF 1.16) — modest, lumpy, but positive.** Per-sub (verified in the trades):
-- **S4 (−$9k):** regime-conditional, NOT broken — made **+$31k in the Feb–Mar correction**, bled in the choppy up-months. Good in downtrends, bad in chop.
-- **S3 (+$42k):** genuine capitulation-short — won **4 times** across 2026's selloffs (Feb 3, Feb 26, Jun 5). *But tail-dominated*: strip the single Jun 5 crash (+$41.8k) and S3 is ~flat, so high-variance.
-- **S1 (+$6k) / S2 (+$1k) / S5 (+$2k):** small net positives; S1 lumpy (bad Jan, good Feb–Apr).
+| Month | net |
+|---|---|
+| Jan | −$8,145 |
+| **Feb** | **+$49,459** — Feb–Mar correction; shorts + trend fire |
+| **Mar** | **+$17,579** — correction continued |
+| Apr | +$2,913 |
+| May | −$13,488 — choppy up-drift, S4 chopped |
+| Jun | −$2,852 |
+| **Jul** (to the 9th) | **−$24,055** |
+| **ALL 2026** | **+$21,412** · PF **1.08** · win **41%** (65W/94L) · avg **+$135**/trade |
 
-*(An earlier version of this file, run before the Feb–Mar data was available, showed −$25k and concluded "not confirming." That was a **data-gap artifact** — the missing months were exactly the correction that feeds a short-heavy book. Complete data reverses it. Lesson: incomplete forward data biased the conclusion as hard as any look-ahead would.)*
+Per-sub, from the ledger:
 
-**Assessment: a promising deployable-candidate, not a proven machine.** PF 1.16 is below the 1.36 in-sample, month-to-month is lumpy, and the biggest contributor (S3) is tail-dependent — but the book *does* hold up out-of-sample across a full, mixed 6-month regime. More forward runway would firm it up. See `sts_solo_curves.png`.
+| sub | n | net | PF | win |
+|---|---|---|---|---|
+| **S3** | 10 | **+$30,154** | 1.83 | 40% |
+| S5 | 10 | +$1,794 | 1.08 | 50% |
+| S2 | 40 | +$623 | 1.01 | 50% |
+| S1 | 57 | −$2,227 | 0.98 | 33% |
+| **S4** | 42 | **−$8,933** | 0.84 | 40% |
+
+**Honest verdict: this does not clear the bar, and the total flatters it.**
+- **PF 1.08** — barely above breakeven, and well under the 1.36 in-sample.
+- **The book is one sub.** S3's **10 trades** made **+$30,154** — *more than the entire book's net.* Remove S3 and 2026 is **−$8,742**.
+- **The book is one month.** February (**+$49,459**) alone exceeds the full-period net. Strip Feb and the remaining six months are **−$28,047**.
+- **The recent run is bad:** May + Jun + Jul = **−$40,395**, and Jul is the worst month in the sample.
+- **S4 remains a drag** (−$8,933, PF 0.84), consistent with its standalone failure.
+
+**Assessment: NOT a deployable candidate on this evidence.** A book whose entire out-of-sample profit is 10 trades from one sub during one correction, and which has lost money for three straight months, is a *regime bet on selloffs* wearing the costume of a diversified 6-strategy book. It may well be a real edge in downtrends — that's a different, narrower claim, and it needs to be tested and stated as such.
+
+*(A prior note here explained an earlier −$25k reading as a "data-gap artifact" fixed by complete data. That framing stands as history, but it should not be read as vindication — with the complete ledger the book is +$21k, PF 1.08, and concentration-dependent as above.)*
+
+See `sts_solo_curves.png`.
 
 **Design note — single-slot blocking (a lever worth knowing):** the book trades one position at a time (all subs share a slot via `position_size==0`). Over 9yr the book nets **+$840k (PF 1.36)**; the sum of the six subs run *independently* is **+$1.30M (PF 1.42)** — so the single-slot design leaves **~$462k / 35% on the table** to internal blocking (827 signals blocked). **S6 Universal is 88% blocked** (only 40 of 345 signals taken — it fires 09:45–12:00 when the slot is usually busy). Allowing 2 concurrent positions, or giving S6 priority in its window, could recover a chunk of that — at the cost of stacked (correlated) drawdowns and more margin. A design choice, not a bug.
 
@@ -116,7 +131,7 @@ Data the book never saw. **Net positive forward:**
 | `sts_solo.py` | Each sub standalone + gauntlet + equity-curve chart. |
 | `strategy_validator.py` | The validation gauntlet (8 checks). |
 | `trades_NQ_STS_9yr.csv` | All in-sample executions; `sub` column tags which strat fired. |
-| `trades_2026_forward.csv` | The held-out 2026 forward trades (Jan + Apr–Jul); the −$25k in §4. |
+| `trades_2026_forward.csv` | The held-out 2026 forward trades (Jan 2 → Jul 9, n=159, net +$21,412) — the source of every number in §4. |
 | `sts_solo_curves.png` | Standalone per-sub equity curves. |
 | `STS-Regular/STS.pine` | The original Pine source (reference for §2). |
 | `vix.parquet`, `vix3m.parquet` | Daily VIX / VIX3M for the S3/S5 gates. |

@@ -25,7 +25,7 @@ The headline: **all six strategies were rebuilt in Python from their Pine source
 
 ## `nasdaq/` — NQ open & market-structure research
 
-9 years of 1-minute NQ + ES with a fresh **2026** gate. **What's real:** the day's high/low prints in the first hour ~78% (86% in 2026); a real extreme is a volume-climax rejection with absorption; stacked levels reject ~69% (single levels are a coin flip). **What's not:** FVG / sweep / BOS don't *detect* tops, and the mechanical ICT-style entries lose — documented honestly. Full write-up in [`nasdaq/README.md`](nasdaq/README.md).
+9 years of 1-minute NQ + ES with a fresh **2026** gate. **What's real:** the day's high/low prints in the first hour ~78% (86% in 2026); a real extreme is a volume-climax rejection with absorption. **What's not:** single levels are a coin flip; FVG / sweep / BOS don't *detect* tops; and the mechanical ICT-style entries lose — documented honestly. ⚠️ **A previously-published claim here — *"stacked levels reject ~69%"* — has been RETRACTED;** see the retraction in [`nasdaq/README.md`](nasdaq/README.md). Full write-up in [`nasdaq/README.md`](nasdaq/README.md).
 
 **Datasets** (`nasdaq/data/`):
 - `fvg_dataset.csv` — **5,950 fair-value gaps**, each labelled with gap size, volume, VWAP distance, and whether it got tapped / traded through.
